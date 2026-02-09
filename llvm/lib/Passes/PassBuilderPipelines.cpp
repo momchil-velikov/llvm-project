@@ -1335,7 +1335,6 @@ void PassBuilder::addVectorPasses(OptimizationLevel Level,
     FPM.addPass(DropUnnecessaryAssumesPass(/*DropDereferenceable=*/true));
 
   FPM.addPass(InferAlignmentPass());
-
   if (isFullLTOPostLink(LTOPhase)) {
     // The vectorizer may have significantly shortened a loop body; unroll
     // again. Unroll small loops to hide loop backedge latency and saturate any
@@ -1358,7 +1357,6 @@ void PassBuilder::addVectorPasses(OptimizationLevel Level,
     // NOTE: we are very late in the pipeline, and we don't have any LICM
     // or SimplifyCFG passes scheduled after us, that would cleanup
     // the CFG mess this may created if allowed to modify CFG, so forbid that.
-    // TODO: Allow that
     FPM.addPass(SROAPass(SROAOptions::PreserveCFG));
   }
 
