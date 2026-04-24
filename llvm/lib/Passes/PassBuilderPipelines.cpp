@@ -1428,7 +1428,7 @@ void PassBuilder::addVectorPasses(OptimizationLevel Level,
   // Enhance/cleanup vector code.
   FPM.addPass(VectorCombinePass());
 
-  if (!isFullLTOPostLink(LTOPhase)) {
+  if (!isFullLTOPreLink(LTOPhase)) {
     FPM.addPass(InstCombinePass());
     // Unroll small loops to hide loop backedge latency and saturate any
     // parallel execution resources of an out-of-order processor. We also then

@@ -67,7 +67,7 @@
 ; RUN: opt -disable-verify -verify-analysis-invalidation=0 -eagerly-invalidate-analyses=0 -debug-pass-manager \
 ; RUN:     -passes-ep-optimizer-last='no-op-module' \
 ; RUN:     -passes='default<O3>' -S  %s 2>&1 \
-; RUN:     | FileCheck %s --check-prefixes=CHECK-O,CHECK-DEFAULT,CHECK-O3,%llvmcheckext,CHECK-EP-OPTIMIZER-LAST,CHECK-O23
+; RUN:     | FileCheck %s --check-prefixes=CHECK-O,CHECK-DEFAULT,CHECK-DEFAULT-O23,CHECK-O3,%llvmcheckext,CHECK-EP-OPTIMIZER-LAST,CHECK-O23
 
 ; RUN: opt -disable-verify -verify-analysis-invalidation=0 -eagerly-invalidate-analyses=0 -debug-pass-manager \
 ; RUN:     -passes='default<O3>' -enable-matrix -S  %s 2>&1 \
@@ -253,10 +253,10 @@
 ; CHECK-O-NEXT: Running pass: SimplifyCFGPass
 ; CHECK-DEFAULT-O23-NEXT: Running pass: SLPVectorizerPass
 ; CHECK-O-NEXT: Running pass: VectorCombinePass
-; CHECK-O-NEXT: Running pass: InstCombinePass
-; CHECK-O-NEXT: Running pass: LoopUnrollPass
-; CHECK-O-NEXT: Running pass: WarnMissedTransformationsPass
-; CHECK-O-NEXT: Running pass: SROAPass
+; CHECK-DEFAULT-NEXT: Running pass: InstCombinePass
+; CHECK-DEFAULT-NEXT: Running pass: LoopUnrollPass
+; CHECK-DEFAULT-NEXT: Running pass: WarnMissedTransformationsPass
+; CHECK-DEFAULT-NEXT: Running pass: SROAPass
 ; CHECK-O-NEXT: Running pass: InferAlignmentPass
 ; CHECK-O-NEXT: Running pass: InstCombinePass
 ; CHECK-O-NEXT: Running pass: LoopSimplifyPass
