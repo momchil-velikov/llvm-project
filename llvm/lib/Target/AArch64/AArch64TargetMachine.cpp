@@ -461,9 +461,8 @@ AArch64TargetMachine::getSubtargetImpl(const Function &F) const {
     MaxSVEVectorSize = std::max(MinSVEVectorSize, MaxSVEVectorSize);
   }
 
-  AArch64SubtargetMapKey Key(MinSVEVectorSize, MaxSVEVectorSize, IsStreaming,
-                             IsStreamingCompatible, HasMinSize, CPU, TuneCPU,
-                             FS);
+  AArch64SubtargetKey Key(MinSVEVectorSize, MaxSVEVectorSize, IsStreaming,
+                          IsStreamingCompatible, HasMinSize, CPU, TuneCPU, FS);
 
   auto &I = SubtargetMap[Key];
   if (!I) {

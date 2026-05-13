@@ -24,58 +24,51 @@
 
 namespace llvm {
 
-struct AArch64SubtargetMapKey {
-  SmallString<32> CPU;
-  SmallString<32> TuneCPU;
-  SmallString<128> FS;
-  unsigned MinSVEVectorSize = 0;
-  unsigned MaxSVEVectorSize = 0;
-  bool IsStreaming = false;
-  bool IsStreamingCompatible = false;
-  bool HasMinSize = false;
+struct AArch64SubtargetKey {
+  SmallString<128> Text;
+  unsigned Bin = 0;
 
-  AArch64SubtargetMapKey() = default;
+  AArch64SubtargetKey() = default;
 
-  AArch64SubtargetMapKey(unsigned MinSVEVectorSize, unsigned MaxSVEVectorSize,
-                         bool IsStreaming, bool IsStreamingCompatible,
-                         bool HasMinSize, StringRef CPU, StringRef TuneCPU,
-                         StringRef FS)
-      : CPU(CPU), TuneCPU(TuneCPU), FS(FS), MinSVEVectorSize(MinSVEVectorSize),
-        MaxSVEVectorSize(MaxSVEVectorSize), IsStreaming(IsStreaming),
-        IsStreamingCompatible(IsStreamingCompatible), HasMinSize(HasMinSize) {}
+  AArch64SubtargetKey(unsigned MinSVEVectorSize, unsigned MaxSVEVectorSize,
+                      bool IsStreaming, bool IsStreamingCompatible,
+                      bool HasMinSize, StringRef CPU, StringRef TuneCPU,
+                      StringRef FS) {
+    Text = CPU;
+    Text += TuneCPU;
+    Text += FS;
+    assert(MinSVEVectorSize <= 2048 && MaxSVEVectorSize <= 2048 &&
+           "SVE vector size should not be larger than 2048 bits");
+    Bin = MinSVEVectorSize | (MaxSVEVectorSize << 12) | (IsStreaming << 24) |
+          (IsStreamingCompatible << 25) | (HasMinSize << 26);
+    assert((Bin < std::numeric_limits<unsigned>::max() - 1) &&
+           "Bin should not overflow into sentinel bits");
+  }
 
-  bool operator==(const AArch64SubtargetMapKey &Other) const {
-    return MinSVEVectorSize == Other.MinSVEVectorSize &&
-           MaxSVEVectorSize == Other.MaxSVEVectorSize &&
-           IsStreaming == Other.IsStreaming &&
-           IsStreamingCompatible == Other.IsStreamingCompatible &&
-           HasMinSize == Other.HasMinSize && CPU == Other.CPU &&
-           TuneCPU == Other.TuneCPU && FS == Other.FS;
+  bool operator==(const AArch64SubtargetKey &Other) const {
+    return Bin == Other.Bin && Text == Other.Text;
   }
 };
 
-template <> struct DenseMapInfo<AArch64SubtargetMapKey> {
-  static inline AArch64SubtargetMapKey getEmptyKey() {
-    AArch64SubtargetMapKey Key;
-    Key.MinSVEVectorSize = std::numeric_limits<unsigned>::max();
+template <> struct DenseMapInfo<AArch64SubtargetKey> {
+  static inline AArch64SubtargetKey getEmptyKey() {
+    AArch64SubtargetKey Key;
+    Key.Bin = std::numeric_limits<unsigned>::max();
     return Key;
   }
 
-  static inline AArch64SubtargetMapKey getTombstoneKey() {
-    AArch64SubtargetMapKey Key;
-    Key.MinSVEVectorSize = std::numeric_limits<unsigned>::max() - 1;
+  static inline AArch64SubtargetKey getTombstoneKey() {
+    AArch64SubtargetKey Key;
+    Key.Bin = std::numeric_limits<unsigned>::max() - 1;
     return Key;
   }
 
-  static unsigned getHashValue(const AArch64SubtargetMapKey &Key) {
-    return static_cast<unsigned>(hash_combine(
-        Key.MinSVEVectorSize, Key.MaxSVEVectorSize, Key.IsStreaming,
-        Key.IsStreamingCompatible, Key.HasMinSize, StringRef(Key.CPU),
-        StringRef(Key.TuneCPU), StringRef(Key.FS)));
+  static unsigned getHashValue(const AArch64SubtargetKey &Key) {
+    return static_cast<unsigned>(hash_combine(Key.Bin, StringRef(Key.Text)));
   }
 
-  static bool isEqual(const AArch64SubtargetMapKey &LHS,
-                      const AArch64SubtargetMapKey &RHS) {
+  static bool isEqual(const AArch64SubtargetKey &LHS,
+                      const AArch64SubtargetKey &RHS) {
     return LHS == RHS;
   }
 };
@@ -83,7 +76,7 @@ template <> struct DenseMapInfo<AArch64SubtargetMapKey> {
 class AArch64TargetMachine : public CodeGenTargetMachineImpl {
 protected:
   std::unique_ptr<TargetLoweringObjectFile> TLOF;
-  mutable DenseMap<AArch64SubtargetMapKey, std::unique_ptr<AArch64Subtarget>>
+  mutable DenseMap<AArch64SubtargetKey, std::unique_ptr<AArch64Subtarget>>
       SubtargetMap;
 
   /// Reset internal state.
