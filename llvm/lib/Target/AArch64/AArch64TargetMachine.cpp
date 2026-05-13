@@ -19,7 +19,6 @@
 #include "AArch64TargetTransformInfo.h"
 #include "MCTargetDesc/AArch64MCTargetDesc.h"
 #include "TargetInfo/AArch64TargetInfo.h"
-#include "llvm/ADT/StringExtras.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/CodeGen/CSEConfigBase.h"
@@ -462,22 +461,9 @@ AArch64TargetMachine::getSubtargetImpl(const Function &F) const {
     MaxSVEVectorSize = std::max(MinSVEVectorSize, MaxSVEVectorSize);
   }
 
-  SmallString<512> Key;
-  // This lookup is hot during repeated TTI queries, so build the key directly
-  // instead of formatting through raw_svector_ostream.
-  Key += "SVEMin";
-  Key += utostr(MinSVEVectorSize);
-  Key += "SVEMax";
-  Key += utostr(MaxSVEVectorSize);
-  Key += "IsStreaming=";
-  Key += utostr(IsStreaming);
-  Key += "IsStreamingCompatible=";
-  Key += utostr(IsStreamingCompatible);
-  Key += CPU;
-  Key += TuneCPU;
-  Key += FS;
-  Key += "HasMinSize=";
-  Key += utostr(HasMinSize);
+  AArch64SubtargetMapKey Key(MinSVEVectorSize, MaxSVEVectorSize, IsStreaming,
+                             IsStreamingCompatible, HasMinSize, CPU, TuneCPU,
+                             FS);
 
   auto &I = SubtargetMap[Key];
   if (!I) {

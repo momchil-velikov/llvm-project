@@ -15,16 +15,76 @@
 
 #include "AArch64InstrInfo.h"
 #include "AArch64Subtarget.h"
+#include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/Hashing.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/CodeGen/CodeGenTargetMachineImpl.h"
 #include "llvm/IR/DataLayout.h"
 #include <optional>
 
 namespace llvm {
 
+struct AArch64SubtargetMapKey {
+  SmallString<32> CPU;
+  SmallString<32> TuneCPU;
+  SmallString<128> FS;
+  unsigned MinSVEVectorSize = 0;
+  unsigned MaxSVEVectorSize = 0;
+  bool IsStreaming = false;
+  bool IsStreamingCompatible = false;
+  bool HasMinSize = false;
+
+  AArch64SubtargetMapKey() = default;
+
+  AArch64SubtargetMapKey(unsigned MinSVEVectorSize, unsigned MaxSVEVectorSize,
+                         bool IsStreaming, bool IsStreamingCompatible,
+                         bool HasMinSize, StringRef CPU, StringRef TuneCPU,
+                         StringRef FS)
+      : CPU(CPU), TuneCPU(TuneCPU), FS(FS), MinSVEVectorSize(MinSVEVectorSize),
+        MaxSVEVectorSize(MaxSVEVectorSize), IsStreaming(IsStreaming),
+        IsStreamingCompatible(IsStreamingCompatible), HasMinSize(HasMinSize) {}
+
+  bool operator==(const AArch64SubtargetMapKey &Other) const {
+    return MinSVEVectorSize == Other.MinSVEVectorSize &&
+           MaxSVEVectorSize == Other.MaxSVEVectorSize &&
+           IsStreaming == Other.IsStreaming &&
+           IsStreamingCompatible == Other.IsStreamingCompatible &&
+           HasMinSize == Other.HasMinSize && CPU == Other.CPU &&
+           TuneCPU == Other.TuneCPU && FS == Other.FS;
+  }
+};
+
+template <> struct DenseMapInfo<AArch64SubtargetMapKey> {
+  static inline AArch64SubtargetMapKey getEmptyKey() {
+    AArch64SubtargetMapKey Key;
+    Key.MinSVEVectorSize = std::numeric_limits<unsigned>::max();
+    return Key;
+  }
+
+  static inline AArch64SubtargetMapKey getTombstoneKey() {
+    AArch64SubtargetMapKey Key;
+    Key.MinSVEVectorSize = std::numeric_limits<unsigned>::max() - 1;
+    return Key;
+  }
+
+  static unsigned getHashValue(const AArch64SubtargetMapKey &Key) {
+    return static_cast<unsigned>(hash_combine(
+        Key.MinSVEVectorSize, Key.MaxSVEVectorSize, Key.IsStreaming,
+        Key.IsStreamingCompatible, Key.HasMinSize, StringRef(Key.CPU),
+        StringRef(Key.TuneCPU), StringRef(Key.FS)));
+  }
+
+  static bool isEqual(const AArch64SubtargetMapKey &LHS,
+                      const AArch64SubtargetMapKey &RHS) {
+    return LHS == RHS;
+  }
+};
+
 class AArch64TargetMachine : public CodeGenTargetMachineImpl {
 protected:
   std::unique_ptr<TargetLoweringObjectFile> TLOF;
-  mutable StringMap<std::unique_ptr<AArch64Subtarget>> SubtargetMap;
+  mutable DenseMap<AArch64SubtargetMapKey, std::unique_ptr<AArch64Subtarget>>
+      SubtargetMap;
 
   /// Reset internal state.
   void reset() override;
