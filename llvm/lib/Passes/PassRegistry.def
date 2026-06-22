@@ -37,6 +37,7 @@ MODULE_ANALYSIS("pass-instrumentation", PassInstrumentationAnalysis(PIC))
 MODULE_ANALYSIS("profile-summary", ProfileSummaryAnalysis())
 MODULE_ANALYSIS("reg-usage", PhysicalRegisterUsageAnalysis())
 MODULE_ANALYSIS("runtime-libcall-info", RuntimeLibraryAnalysis())
+MODULE_ANALYSIS("should-run-extra-inliner-module", ShouldRunExtraInlinerModule())
 MODULE_ANALYSIS("stack-safety", StackSafetyGlobalAnalysis())
 MODULE_ANALYSIS("verify", VerifierAnalysis())
 
@@ -80,6 +81,8 @@ MODULE_PASS("elim-avail-extern", EliminateAvailableExternallyPass())
 MODULE_PASS("extract-blocks", BlockExtractorPass({}, false))
 MODULE_PASS("expand-variadics",
             ExpandVariadicsPass(ExpandVariadicsMode::Disable))
+MODULE_PASS("extra-inliner-passes",
+            ExtraModulePassManager<ShouldRunExtraInlinerModule>())
 MODULE_PASS("forceattrs", ForceFunctionAttrsPass())
 MODULE_PASS("function-import", FunctionImportPass())
 MODULE_PASS("global-merge-func", GlobalMergeFuncPass())
@@ -153,6 +156,7 @@ MODULE_PASS("print<ir2vec-vocab>", IR2VecVocabPrinterPass(errs()))
 MODULE_PASS("print<module-debuginfo>", ModuleDebugInfoPrinterPass(errs()))
 MODULE_PASS("print<reg-usage>", PhysicalRegisterUsageInfoPrinterPass(errs()))
 MODULE_PASS("prof-verify", ProfileVerifierPass())
+MODULE_PASS("promote-extra-inliner-marker", PromoteExtraInlinerMarker())
 MODULE_PASS("pseudo-probe", SampleProfileProbePass(TM))
 MODULE_PASS("pseudo-probe-update", PseudoProbeUpdatePass())
 MODULE_PASS("recompute-globalsaa", RecomputeGlobalsAAPass())
@@ -386,6 +390,7 @@ FUNCTION_ANALYSIS("should-not-run-function-passes",
                   ShouldNotRunFunctionPassesAnalysis())
 FUNCTION_ANALYSIS("should-run-extra-vector-passes",
                   ShouldRunExtraVectorPasses())
+FUNCTION_ANALYSIS("should-run-extra-inliner", ShouldRunExtraInliner())
 FUNCTION_ANALYSIS("ssp-layout", SSPLayoutAnalysis())
 FUNCTION_ANALYSIS("stack-safety-local", StackSafetyAnalysis())
 FUNCTION_ANALYSIS("target-ir",

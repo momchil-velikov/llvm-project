@@ -113,6 +113,7 @@ add_llvm_component_library(LLVMAnalysis
   LoopUnrollAnalyzer.cpp
   LoopInfo.cpp
   LoopPass.cpp
+  Marker.cpp
   MLInlineAdvisor.cpp
   MemDerefPrinter.cpp
   MemoryBuiltins.cpp

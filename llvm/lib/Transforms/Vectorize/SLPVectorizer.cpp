@@ -47,6 +47,7 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
+#include "llvm/Analysis/Utils/Marker.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/Analysis/VectorUtils.h"
 #include "llvm/IR/Attributes.h"
@@ -27546,12 +27547,16 @@ PreservedAnalyses SLPVectorizerPass::run(Function &F, FunctionAnalysisManager &A
   auto *ORE = &AM.getResult<OptimizationRemarkEmitterAnalysis>(F);
 
   bool Changed = runImpl(F, SE, TTI, TLI, AA, LI, DT, AC, DB, ORE);
-  if (!Changed)
-    return PreservedAnalyses::all();
+  if (Changed) {
+    AM.getResult<ShouldRunExtraInliner>(F);
 
-  PreservedAnalyses PA;
-  PA.preserveSet<CFGAnalyses>();
-  return PA;
+    PreservedAnalyses PA;
+    PA.preserveSet<CFGAnalyses>();
+    PA.preserve<ShouldRunExtraInliner>();
+    return PA;
+  }
+
+  return PreservedAnalyses::all();
 }
 
 bool SLPVectorizerPass::runImpl(Function &F, ScalarEvolution *SE_,

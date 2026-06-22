@@ -26,6 +26,7 @@
 #include "llvm/Analysis/ProfileSummaryInfo.h"
 #include "llvm/Analysis/ScopedNoAliasAA.h"
 #include "llvm/Analysis/TypeBasedAliasAnalysis.h"
+#include "llvm/Analysis/Utils/Marker.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 #include "llvm/Passes/OptimizationLevel.h"
@@ -2315,17 +2316,23 @@ PassBuilder::buildLTODefaultPipeline(OptimizationLevel Level,
   MPM.addPass(createModuleToFunctionPassAdaptor(std::move(MainFPM),
                                                 PTO.EagerlyInvalidateAnalyses));
 
+  ExtraModulePassManager<ShouldRunExtraInlinerModule> ExtraMPM;
   if (EnableModuleInliner) {
-    MPM.addPass(ModuleInlinerPass(::getInlineParamsFromOptLevel(Level),
-                                  UseInlineAdvisor,
-                                  ThinOrFullLTOPhase::FullLTOPostLink));
+    ExtraMPM.addPass(ModuleInlinerPass(::getInlineParamsFromOptLevel(Level),
+                                       UseInlineAdvisor,
+                                       ThinOrFullLTOPhase::FullLTOPostLink));
   } else {
-    MPM.addPass(ModuleInlinerWrapperPass(
+    ExtraMPM.addPass(ModuleInlinerWrapperPass(
         ::getInlineParamsFromOptLevel(Level),
         /* MandatoryFirst */ true,
         InlineContext{ThinOrFullLTOPhase::FullLTOPostLink,
                       InlinePass::CGSCCInliner}));
   }
+  ExtraMPM.addPass(
+      createModuleToFunctionPassAdaptor(SROAPass(SROAOptions::ModifyCFG)));
+
+  MPM.addPass(PromoteExtraInlinerMarker());
+  MPM.addPass(std::move(ExtraMPM));
 
   // Lower type metadata and the type.test intrinsic. This pass supports
   // clang's control flow integrity mechanisms (-fsanitize=cfi*) and needs
@@ -2342,8 +2349,6 @@ PassBuilder::buildLTODefaultPipeline(OptimizationLevel Level,
 
   // Add late LTO optimization passes.
   FunctionPassManager LateFPM;
-
-  LateFPM.addPass(SROAPass(SROAOptions::ModifyCFG));
 
   // Delete basic blocks, which optimization passes may have killed.
   LateFPM.addPass(SimplifyCFGPass(SimplifyCFGOptions()
