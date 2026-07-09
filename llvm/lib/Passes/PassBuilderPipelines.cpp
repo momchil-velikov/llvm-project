@@ -2301,8 +2301,8 @@ PassBuilder::buildLTODefaultPipeline(OptimizationLevel Level,
 
   // The loop passes in LPM (LoopFullUnrollPass) do not preserve MemorySSA.
   // *All* loop passes must preserve it, in order to be able to use it.
-  // TODO: Explore enabling MemorySSA for loop passes after we remove the
-  // LoopFullUnrollPass.
+  // TODO: Explore enabling MemorySSA for loop passes now that
+  // LoopFullUnrollPass is moved out of LPM.
   MainFPM.addPass(
       createFunctionToLoopPassAdaptor(std::move(LPM), /*UseMemorySSA=*/false));
 
